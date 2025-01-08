@@ -1,12 +1,13 @@
 ---
 title: "Lab 1: Generalize Fast!"
 subtitle: "Replication data from experiment: 
-*Social Competition Drives Collective Action to Reduce Informal Waste Burning in Uganda*"
 author: "**EDS 241**"
 date: "`r Sys.Date()`"
 output: 
     html_document:
       theme: flatly
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, echo=FALSE, warning=FALSE, message=FALSE}
@@ -16,10 +17,12 @@ library(rmarkdown)
 
 ------------------------------------------------------------------------
 
-### Figure: Map of Treatment Assignment Zones in Nansana, Uganda 
+### Figure: Map of Treatment Assignment Zones in Nansana, Uganda
 
-    * SOURCE: Figure from Buntaine et al., 2024 (S5; Supplemental Materials)
-  
+```         
+* SOURCE: Figure from Buntaine et al., 2024 (S5; Supplemental Materials)
+```
+
 ![](figures/S5_Buntaine24.png)
 
 ------------------------------------------------------------------------
@@ -28,32 +31,34 @@ library(rmarkdown)
 
 Open access data was utilized for this class exercise from the study (Buntaine et al., 2024):
 
-> Buntaine, M. T., Komakech, P., & Shen, S. V. (2024). *Social competition drives collective action to reduce informal waste burning in Uganda*. Proceedings of the National Academy of Sciences, 121(23). https://doi.org/10.1073/pnas.2319712121
+> Buntaine, M. T., Komakech, P., & Shen, S. V. (2024). *Social competition drives collective action to reduce informal waste burning in Uganda*. Proceedings of the National Academy of Sciences, 121(23). <https://doi.org/10.1073/pnas.2319712121>
 
 ------------------------------------------------------------------------
 
 ### Outline - What are the goals of this exercise?
 
-#### 1.  Start with a simple OLS model
+#### 1. Start with a simple OLS model
 
-#### 2.  Demonstrate the rationale for estimating progressively complex models
+#### 2. Demonstrate the rationale for estimating progressively complex models
 
-#### 3.  Illustrate a causal inference approach (i.e., identify `robust` estimators)
+#### 3. Illustrate a causal inference approach (i.e., identify `robust` estimators)
 
 #### 4. Conclusion: What is the take-home message of the Lab-1 exercise? . . .
 
-    Estimating complex models is a relatively easy part of our work as data scientists...
+```         
+Estimating complex models is a relatively easy part of our work as data scientists...
 
-    * Making informed specification decisions & communicating results is the hard part
-    (i.e., the science side of `data science`)!  
-    
+* Making informed specification decisions & communicating results is the hard part
+(i.e., the science side of `data science`)!  
+```
+
 ------------------------------------------------------------------------
 
 In this tutorial I use `this text style` to highlight:
 
--  Statistical jargon - E.g., `Ordinary Least Squares (OLS)`
--  Variable names - E.g., `predictor_x`
--  In-text R code - E.g., `here::here()`
+-   Statistical jargon - E.g., `Ordinary Least Squares (OLS)`
+-   Variable names - E.g., `predictor_x`
+-   In-text R code - E.g., `here::here()`
 
 ------------------------------------------------------------------------
 
@@ -117,15 +122,21 @@ Review of regression: Ordinary Least Squares (OLS)
 ------------------------------------------------------------------------
 
 ```{r, eval=FALSE}
+# linear model of post treatment data
+m1_ols <- lm(
+    waste_piles ~ treat,
+    data = post_treat_subset
+)
 
-m1_ols <- 
-
+# print the model output
 summ(m1_ols, model.fit = FALSE)
 ```
 
 ### Are we making reasonable assumptions?
 
-    Let's take a quick look at our outcome variable `waste piles`!
+```         
+Let's take a quick look at our outcome variable `waste piles`!
+```
 
 ```{r}
 post_treat_subset %>%
@@ -146,15 +157,15 @@ Make a QQ plot displaying residuals (y-axis) compared to the normal distribution
 check_model(m1_ols,  check = "qq" )
 ```
 
-**Key takeaways:** 
+**Key takeaways:**
 
--   Hmmm... our outcome is a count variable 
+-   Hmmm... our outcome is a count variable
 -   Is the OLS assumption, *normality of residuals*, a good fit for the data?
 -   Probably not, let's do away with normality!
 
 ------------------------------------------------------------------------
 
-###  Relax- time to generalize!
+### Relax- time to generalize!
 
 -   We can `relax` the normality assumption
 -   The outcome `waste_piles` is a `count variable`, not a true continuous variable
@@ -166,8 +177,10 @@ check_model(m1_ols,  check = "qq" )
 ### Model 2: Poisson Generalized Linear Regression Model
 
 -   Poisson regression explicitly models the outcome as a count variable
+
 -   Assumes `Y` follows a Poisson distribution with non-negative integers (counts!)
--   Poisson regression makes an additional assumption- that variance (dispersion) is proportional to the mean 
+
+-   Poisson regression makes an additional assumption- that variance (dispersion) is proportional to the mean
 
     Does the data match the theoretical distribution proposed?
 
@@ -194,14 +207,24 @@ ggplot(post_treat_subset, aes(x = waste_piles)) +
 ```
 
 ### Ok, lets try estimating a Poisson model using `glm()`
+
+assumption = variance is proportional to the mean - "dispersion"
 ```{r, eval=FALSE}
-m2_poisson <- 
+m2_poisson <- glm(
+    waste_piles ~ treat,
+    family = poisson(link = "log"),
+    data = post_treat_subset
+)
 
 summ(m2_poisson, model.fit = FALSE)
 
+# Change in percent (if its over 1, positive change - if its under 1 , its a reduction)
+exp(-0.38) - 1
+# This is estimating a 31% reduction in waste piles
 ```
 
 **Check overdispersion assumption**
+
 ```{r}
 check_overdispersion(m2_poisson)
 ```
@@ -227,16 +250,20 @@ check_overdispersion(m2_poisson)
 ------------------------------------------------------------------------
 
 -   The `Log-OLS regression` estimator works similarly to Poisson regression but with different assumptions
--   Instead of modeling the count directly, we transform the outcome variable by taking the *natural log* 
+-   Instead of modeling the count directly, we transform the outcome variable by taking the *natural log*
 
 ```{r, eval=FALSE}
-m3_log <- 
+m3_log <- lm(
+    log(waste_piles) ~ 
+        treat, 
+    data = post_treat_subset
+)
 
 summ(m3_log, model.fit = FALSE)
 ```
 
-
 ### Compare observed data to simulated data based on the fitted model (`m3_log`)
+
 ```{r}
 check_predictions(m3_log, verbose = FALSE)
 ```
@@ -250,6 +277,7 @@ check_predictions(m3_log, verbose = FALSE)
 ------------------------------------------------------------------------
 
 ### Comparing model output - Let's take a look at the models we've estimated side-by-side
+
 ```{r}
 export_summs(m1_ols, m2_poisson, m3_log,
              model.names = c("OLS","Poisson GLM","Log(Outcome) OLS"),
@@ -259,6 +287,7 @@ export_summs(m1_ols, m2_poisson, m3_log,
 ------------------------------------------------------------------------
 
 ### Let's do some quick math to compare treatment effect estimates
+
 ```{r}
 # Calculate percent change in waste piles in each model:
 
@@ -270,9 +299,11 @@ m3_est_log = (-0.42)*100         # % change = -42
 
 ------------------------------------------------------------------------
 
-### Analysis check-in: 
+### Analysis check-in:
 
-    So far the log-OLS regression model is the best fitting model we have specified 
+```         
+So far the log-OLS regression model is the best fitting model we have specified 
+```
 
 **The treatment estimate for log-OLS can be interpret as follows:**
 
@@ -285,7 +316,9 @@ m3_est_log = (-0.42)*100         # % change = -42
 
 ### Let's take a look at covariate balance across treatment conditions
 
-    Specifically, `pre_count_avg` (pre-treatment waste pile counts)
+```         
+Specifically, `pre_count_avg` (pre-treatment waste pile counts)
+```
 
 ```{r}
 
@@ -308,7 +341,7 @@ post_treat_subset %>%
 -   Is this experiment a `Randomized Controlled Trial (RCT)`?
 -   Not quite - What about `selection bias/OVB`?
 -   Recall that the study researchers selected contiguous neighborhood pairs to compete in the intervention
--   This assignment procedure could plausibly introduce selection bias (contaminating our treatment effect) 
+-   This assignment procedure could plausibly introduce selection bias (contaminating our treatment effect)
 -   It's **always** important to check for balance on pre-treatment baseline characteristics (to check if randomization worked)
 -   Luckily, we can `control away` known sources of selection bias by adding `pre_count_avg` to the OLS model
 
@@ -317,6 +350,7 @@ post_treat_subset %>%
 m4_control <- lm(
     log(waste_piles) ~ 
         treat + 
+        pre_count_avg, ## add control
         , ## Add control
     data = post_treat_subset)
 
@@ -332,7 +366,9 @@ summ(m4_control, model.fit = FALSE)
 
 **No!** We should account for events that might also affect trash burning during the treatment period
 
-    I.e., Anything else that might affect the number of trash piles burned (besides our treatment)
+```         
+I.e., Anything else that might affect the number of trash piles burned (besides our treatment)
+```
 
 -   Trash pile burning in these neighborhoods may vary by weather conditions
 -   Note: We will also switch to using `heteroskedasticity robust` standard errors (*more on this later!*)
@@ -340,6 +376,7 @@ summ(m4_control, model.fit = FALSE)
 ------------------------------------------------------------------------
 
 ### Look at balance across treatment conditions for average rain events
+
 ```{r}
 
 post_treat_subset %>% 
@@ -353,6 +390,7 @@ post_treat_subset %>%
 ```
 
 ### Add controls for rain events during the competition period
+
 ```{r, eval=FALSE}
 m5_control2 <- lm(
     log(waste_piles) ~ 
@@ -366,6 +404,7 @@ summ(m5_control2,
 ```
 
 ### Comparing models after adding controls
+
 ```{r, eval=FALSE}
 export_summs(m4_control, m5_control2, robust = "HC2",
              model.names = c("M4 - Pre-treat","M5 - Add Rain"),
@@ -400,23 +439,26 @@ summ(m6_clust,
 
 ```
 
-
 ------------------------------------------------------------------------
 
 **Key takeaways:**
 
 -   Our treatment effect result is `robust` (remains unchanged) after adding the standard error adjustment
+
 -   **NOTE**: That the standard error (`SE`) is slightly more `conservative` (i.e., the SE increased)
--   After accounting for dependencies by pair clusters the `SE` increased by .01 
--   However, our interpretation of the treatment effect remains unchanged 
+
+-   After accounting for dependencies by pair clusters the `SE` increased by .01
+
+-   However, our interpretation of the treatment effect remains unchanged
+
 -   The treatment was found to reduce waste pile burning by 27% (`p<.001`).
 
     Model `M6` replicates the treatment effect reported in Buntaine et al., 2024 (see Figure 2; T+6)
-    
+
 ------------------------------------------------------------------------
-   
-### Figure 2 adapted from Buntaine et al. (2024) - Replication of `T+6` treatment estimate 
-  
+
+### Figure 2 adapted from Buntaine et al. (2024) - Replication of `T+6` treatment estimate
+
 ![Source (Buntaine et al., 2024)](figures/Fig.2_Buntaine24.png)
 
 ------------------------------------------------------------------------
